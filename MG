@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Masi Grind</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    font-family: sans-serif;
+    background: #87CEEB; /* sky blue */
+  }
+  #gameCanvas {
+    background: #cceeff;
+    display: block;
+    margin: auto;
+    border: 2px solid #333;
+  }
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="250"></canvas>
+<div id="score">Score: 0</div>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Load character sprite
+const playerImg = new Image();
+playerImg.src = "masi.png"; // <-- replace with the filename of your cut-out character
+
+let player = {
+  x: 50, y: 180, width: 60, height: 60,
+  dy: 0, gravity: 0.8, jumpPower: -12,
+  isJumping: false
+};
+
+let obstacles = [];
+let score = 0;
+let gameSpeed = 5;
+let spawnTimer = 0;
+let spawnInterval = 90;
+
+function resetGame() {
+  player.y = 180;
+  player.dy = 0;
+  obstacles = [];
+  score = 0;
+  gameSpeed = 5;
+  spawnTimer = 0;
+}
+
+function spawnObstacle() {
+  const size = Math.random() * 20 + 30;
+  obstacles.push({ x: canvas.width, y: canvas.height - size - 20, width: size, height: size });
+}
+
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Background ground
+  ctx.fillStyle = "#228B22";
+  ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+  // Player physics
+  player.dy += player.gravity;
+  player.y += player.dy;
+  if (player.y > canvas.height - player.height - 20) {
+    player.y = canvas.height - player.height - 20;
+    player.dy = 0;
+    player.isJumping = false;
+  }
+
+  // Draw player image
+  ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+
+  // Obstacles
+  spawnTimer++;
+  if (spawnTimer > spawnInterval) {
+    spawnObstacle();
+    spawnTimer = 0;
+    if (spawnInterval > 30) spawnInterval -= 1;
+    gameSpeed += 0.05;
+  }
+
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    let obs = obstacles[i];
+    obs.x -= gameSpeed;
+
+    // Draw enemy block (can be replaced with enemy sprite)
+    ctx.fillStyle = "#ff3300";
+    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+    // Collision
+    if (
+      player.x < obs.x + obs.width &&
+      player.x + player.width > obs.x &&
+      player.y < obs.y + obs.height &&
+      player.y + player.height > obs.y
+    ) {
+      alert("Game Over! Score: " + score);
+      resetGame();
+      return;
+    }
+
+    if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+  }
+
+  // Score
+  score++;
+  document.getElementById("score").innerText = "Score: " + score;
+
+  requestAnimationFrame(update);
+}
+
+function jump() {
+  if (!player.isJumping) {
+    player.dy = player.jumpPower;
+    player.isJumping = true;
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space") jump();
+});
+
+document.addEventListener("mousedown", () => jump());
+
+// Start loop after sprite loads
+playerImg.onload = () => update();
+</script>
+</body>
+</html>
